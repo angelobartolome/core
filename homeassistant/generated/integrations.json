@@ -1054,6 +1054,12 @@
       "config_flow": true,
       "iot_class": "local_polling"
     },
+    "daikin_ac_br": {
+      "name": "Daikin AC (Brasil)",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "local_polling"
+    },
     "danfoss_air": {
       "name": "Danfoss Air",
       "integration_type": "hub",

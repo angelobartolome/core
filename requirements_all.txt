@@ -1739,6 +1739,9 @@ pycomfoconnect==0.5.1
 # homeassistant.components.coolmaster
 pycoolmasternet-async==0.1.5
 
+# homeassistant.components.daikin_ac_br
+pycryptodome==3.20.0
+
 # homeassistant.components.microsoft
 pycsspeechtts==1.0.8
 
