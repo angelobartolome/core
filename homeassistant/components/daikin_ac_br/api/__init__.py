@@ -7,7 +7,14 @@ from .encryption import ACUnitEncryptionService
 
 
 class DaikinACBR:
-    def __init__(self, host, key):
+    def __init__(self, host, key) -> None:
+        """Initialize the DaikinACBR instance.
+
+        Args:
+            host (str): The host of the AC unit.
+            key (str): The encryption key.
+
+        """
         self.key = key
         self.host = host
         self.port = 15914
@@ -23,7 +30,7 @@ class DaikinACBR:
         url = f"http://{self.host}:{self.port}/acstatus"
 
         response = requests.request(
-            "GET", url, headers={}, verify=False, allow_redirects=False
+            "GET", url, headers={}, verify=False, allow_redirects=False, timeout=2
         )
         json_data = self.ac_unit_encryption_service.decrypt(response.text)
 
@@ -31,7 +38,6 @@ class DaikinACBR:
         if json_data[-1] != "}":
             json_data = json_data[:-1]
 
-        print("Response from get_status: ", json_data)
         # Convert the json_data to a ACUnit object
         data = json.loads(json_data)
 
@@ -54,7 +60,6 @@ class DaikinACBR:
         ).encode("iso-8859-1")
 
         payload = header_bytes + body_bytes
-        print(payload)
         s.sendall(payload)
 
     # def turn_on(self):
@@ -81,6 +86,7 @@ class DaikinACBR:
 
     def send_command(self, command):
         payload = {"port1": command, "src": 5}
+        print("send_command", payload)
 
         encrypted_payload = self.ac_unit_encryption_service.encrypt(json.dumps(payload))
         self._send_with_socket(encrypted_payload)

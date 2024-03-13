@@ -5,6 +5,7 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant.components.climate import (
+    ATTR_TEMPERATURE,
     FAN_AUTO,
     FAN_HIGH,
     FAN_LOW,
@@ -39,6 +40,12 @@ DAIKIN_FAN_TO_HA_FAN = {
     6: FAN_HIGH,
     7: FAN_HIGH,
     17: FAN_AUTO,
+}
+
+
+DAIKIN_MODE_TO_HA_MODE = {
+    6: HVACMode.FAN_ONLY,
+    3: HVACMode.COOL,
 }
 
 
@@ -100,14 +107,18 @@ class DaikinBRClimate(CoordinatorEntity, ClimateEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        print("Handle updated data from the coordinator")
         data = self.coordinator.data["port1"]
 
         self._attr_current_temperature = data["sensors"]["room_temp"]
         self._attr_fan_mode = DAIKIN_FAN_TO_HA_FAN[data["fan"]]
+
+        self._attr_hvac_mode = (
+            HVACMode.OFF if data["power"] == 0 else DAIKIN_MODE_TO_HA_MODE[data["mode"]]
+        )
+        self._attr_target_temperature = data["temperature"]
+
         self.swing_mode = SWING_OFF if data["v_swing"] == 0 else SWING_VERTICAL
 
-        # self._attr_is_on = self.coordinator.data[self.idx]["state"]
         self.async_write_ha_state()
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
@@ -133,5 +144,38 @@ class DaikinBRClimate(CoordinatorEntity, ClimateEntity):
         }
 
         self.coordinator.api.send_command({"fan": FAN_MODES[fan_mode]})
+
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_on(self) -> None:
+        """Turn the entity on."""
+        self.coordinator.api.send_command({"power": 1})
+        await self.coordinator.async_request_refresh()
+
+    async def async_set_hvac_mode(self, hvac_mode: str) -> None:
+        """Set new target temperature."""
+
+        HVAC_MODES = {
+            HVACMode.FAN_ONLY: 6,
+            HVACMode.COOL: 3,
+            HVACMode.OFF: 0,
+            HVACMode.AUTO: 0,
+        }
+
+        if hvac_mode == HVACMode.OFF:
+            self.coordinator.api.send_command({"power": 0})
+        else:
+            self.coordinator.api.send_command({"mode": HVAC_MODES[hvac_mode]})
+
+        await self.coordinator.async_request_refresh()
+
+    async def async_set_temperature(self, **kwargs: Any) -> None:
+        """Set a new target temperature."""
+
+        # Ignore if HVAC is fan only
+        if self.hvac_mode != HVACMode.COOL:
+            return
+
+        self.coordinator.api.send_command({"temperature": kwargs[ATTR_TEMPERATURE]})
 
         await self.coordinator.async_request_refresh()

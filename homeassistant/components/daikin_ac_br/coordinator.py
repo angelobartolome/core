@@ -1,9 +1,8 @@
 """Example integration using DataUpdateCoordinator."""
 
+from asyncio import timeout
 from datetime import timedelta
 import logging
-
-import async_timeout
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -36,7 +35,7 @@ class DaikinACBRCoordinator(DataUpdateCoordinator):
         try:
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
-            async with async_timeout.timeout(10):
+            async with timeout(10):
                 return await self.hass.async_add_executor_job(self.api.fetch_data)
 
         except ApiAuthError as err:
